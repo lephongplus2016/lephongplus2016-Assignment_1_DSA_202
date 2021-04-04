@@ -11,7 +11,7 @@ bool VM::readfile(string filename)
     {
         getline(f,line);
         data += line;
-        load(line);
+        loadToMemory(line);
 
     }
     f.close();
@@ -74,7 +74,8 @@ GReg::~GReg(){}
         }
         this->codeLoadedIndex = 0;
 }
-
+// nhom lenh doc ghi --------------------------------------------------------
+//---------------------------------------------------------------------------
 void VM::move(string dest, string src) {
 
     int destID= stoi(dest.substr(1))-1;
@@ -95,12 +96,14 @@ void VM::move(string dest, string src) {
         {
             registerVM[destID].data_bool = registerVM[srcID].data_bool;
         }
-        else {
+        else { // case address
             registerVM[destID].data_address = registerVM[srcID].data_address;
+            
         }
 
     }
     else {
+        src = src.erase(src.length()-1);
         regex e ("[-+]?[0-9]*\\.[0-9]+");     // nho co \ nen regex moi nhan ra .
             bool correct = regex_match(src, e);
 
@@ -119,6 +122,13 @@ void VM::move(string dest, string src) {
                 registerVM[destID].data_float = stof(src);
                 registerVM[destID].type = FLOAT;
             }
+            else if(src[src.length()-1] == 'A' ){ //case address
+
+                string temp = src.erase(src.length()-1);
+                registerVM[destID].type = ADDRESS;  
+                registerVM[destID].data_address = stoi(temp);
+                
+            }
             else{
                 registerVM[destID].data_int = stoi(src);
                 registerVM[destID].type = INT;
@@ -129,7 +139,7 @@ void VM::move(string dest, string src) {
     
 void VM::output(string dest) {
     int index = stoi(dest.substr(1)) - 1;
-    if(registerVM[index].type == INT )
+        if(registerVM[index].type == INT )
         {
             cout<<registerVM[index].data_int ;
         }
@@ -141,13 +151,168 @@ void VM::output(string dest) {
         {
             cout<<registerVM[index].data_bool ;
         }
-        else {
-            cout<<registerVM[index].data_address;
+        else if(registerVM[index].type == ADDRESS ){
+            cout<<registerVM[index].data_address;  //address case
         }
     ip++;
     }
 
-void VM::load(string instruction)
+// lay gia tri cua src gan cho dest; src van la address nhung dest thi khong.
+void VM::load(string dest, string src)
+{
+    int destID= stoi(dest.substr(1))-1;
+    int srcID= stoi(src.substr(1))-1;
+    int indexStatic = registerVM[srcID].data_address;
+    DataType srcType = StaticReg[indexStatic].type;
+    registerVM[destID].type = srcType;
+
+    // xu ly gan gia tri cua src cho dest, dest co type theo kieu cua gia tri duoc dan
+    if(srcType == INT )
+        {
+            registerVM[destID].data_int = StaticReg[indexStatic].data_int;
+        }
+        else if(srcType== FLOAT )
+        {
+            registerVM[destID].data_float = StaticReg[indexStatic].data_float;
+        }
+        else 
+        {
+            registerVM[destID].data_bool = StaticReg[indexStatic].data_bool;
+        }
+    ip++;
+}
+
+void VM::store(string dest, string src)  //xac dinh dest da la address variable , src la ko the la dia chi
+{
+    int destID= stoi(dest.substr(1))-1;
+    int indexStatic = registerVM[destID].data_address;          // luu vao bo nho tinh
+    if(src[0] == 'R')
+    {
+        int srcID = stoi(src.substr(1))-1;
+        
+        
+        StaticReg[indexStatic].type = registerVM[srcID].type ;
+
+        if(registerVM[srcID].type == INT )
+        {
+            StaticReg[indexStatic].data_int = registerVM[srcID].data_int;
+        }
+        else if(registerVM[srcID].type == FLOAT )
+        {
+            StaticReg[indexStatic].data_float = registerVM[srcID].data_float;
+        }
+        else if(registerVM[srcID].type == BOOL )                       // ko the la luu address vao bo nho tinh
+        {
+            StaticReg[indexStatic].data_bool = registerVM[srcID].data_bool;
+        }
+
+    }
+    else {
+        regex e ("[-+]?[0-9]+\\.[0-9]+");     // nho co \ nen regex moi nhan ra .
+            bool correct = regex_match(src, e);
+
+            if(src== "true")
+            {
+                StaticReg[indexStatic].data_bool = true;
+                StaticReg[indexStatic].type = BOOL;
+            }
+            else if(src== "false")
+            {
+                StaticReg[indexStatic].data_bool = false;
+                StaticReg[indexStatic].type = BOOL;
+
+            }
+            else if(correct == true)
+            {
+                StaticReg[indexStatic].data_float = stof(src);
+                StaticReg[indexStatic].type = FLOAT;
+
+            }
+            else{
+                StaticReg[indexStatic].data_int = stoi(src);
+                StaticReg[indexStatic].type = INT;
+  
+            }
+    }
+    this->ip++;
+}
+
+
+// nhom lenh so hoc -----------------------------------------------------------
+//-----------------------------------------------------------------------------
+void VM::add(string dest, string src){
+    int destID= stoi(dest.substr(1))-1;
+        if(src[0] == 'R')
+    {
+        int srcID = stoi(src.substr(1))-1;
+        
+
+        if(registerVM[srcID].type == INT && registerVM[destID].type== INT)
+        {
+            registerVM[destID].data_int += registerVM[srcID].data_int;
+        }
+        else if(registerVM[srcID].type == FLOAT || registerVM[destID].type== FLOAT)
+        {
+            registerVM[destID].data_float += registerVM[srcID].data_float;
+        }
+        else {
+            throw TypeMismatch(ip);
+        }
+        
+    }
+    else {
+        src = src.erase(src.length()-1);
+        regex e ("[-+]?[0-9]*\\.[0-9]+");     // nho co \ nen regex moi nhan ra .
+            bool correct = regex_match(src, e);
+
+            if(src== "true")
+            {
+                throw TypeMismatch(ip);
+            }
+            else if(src== "false")
+            {
+                throw TypeMismatch(ip);
+            }
+            else if(correct == true)
+            {
+                if(registerVM[destID].type == INT ) //xet src la float
+                {
+                    registerVM[destID].data_float = registerVM[destID].data_int;
+                }
+                registerVM[destID].data_float += stof(src);
+                registerVM[destID].type = FLOAT;
+            }
+            else if(src[src.length()-1] == 'A' ){ //case address
+
+                throw TypeMismatch(ip);
+                
+            }
+            else{
+                if(registerVM[destID].type == FLOAT )  // xet src la int
+                {
+                    registerVM[destID].data_float += stof(src);
+                }
+                registerVM[destID].data_int += stoi(src);
+            }
+    }
+    this->ip++;
+}
+
+void VM::minus(string dest, string src){
+
+}
+
+void VM::mul(string dest, string src){
+
+
+}
+
+void VM::div(string dest, string src){
+
+}
+
+
+void VM::loadToMemory(string instruction)
 {
     if(instruction[0] == ' ' || instruction[instruction.length()-1]==' ')
     {
@@ -194,10 +359,14 @@ void VM::run(string filename)
         {
             output(codeMe[i].op1);
         }
-        // else if(codeMe[i].code == "Add")
-        // {
-        //     add(codeMe[i].op1,codeMe[i].op2);
-        // }
+        else if(codeMe[i].code == "Load")
+        {
+            load(codeMe[i].op1,codeMe[i].op2);
+        }
+        else if(codeMe[i].code == "Store")
+        {
+            store(codeMe[i].op1,codeMe[i].op2);
+        }
     }
     dump();   // nho xoa
 }
