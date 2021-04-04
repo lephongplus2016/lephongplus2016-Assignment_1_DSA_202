@@ -80,7 +80,13 @@ public:
   void minus(string dest, string src);
   void mul(string dest, string src);
   void div(string dest, string src);
-
+  //nhom lenh so sanh
+  void CmpEQ(string dest, string src);
+  void CmpNE(string dest, string src);
+  void CmpLT(string dest, string src);
+  void CmpGT(string dest, string src);
+  void CmpGE(string dest, string src);
+  
   void run(string filename);
 };
 #endif
