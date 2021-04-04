@@ -1,5 +1,6 @@
 #include "VM.h"
 
+
 bool checkIsFloat( string src)
 {
     string src2 = src;
