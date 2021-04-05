@@ -1,0 +1,23 @@
+Move R1, 0A
+Store R1, 10.0
+Move R2, 1A
+Store R2, 20
+Load R3, R1
+Load R4, R2
+Add R3, 1
+Move R5, true
+Move R6, false
+CmpEQ R5, R6
+Output R3
+Halt
+
+-- ketqua
+11
+VM Info: 
+IP: 11
+R1: 0           ADDRESS
+R2: 1           ADDRESS
+R3: 11           FLOAT
+R4: 20          INT
+R5: 0           BOOL
+R6: 0           BOOL

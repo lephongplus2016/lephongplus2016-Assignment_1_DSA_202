@@ -86,6 +86,7 @@ public:
   void CmpLT(string dest, string src);
   void CmpGT(string dest, string src);
   void CmpGE(string dest, string src);
+  void CmpLE(string dest, string src);
   
   void run(string filename);
 };

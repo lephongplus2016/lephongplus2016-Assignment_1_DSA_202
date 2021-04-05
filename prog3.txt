@@ -4,6 +4,9 @@ Move R2, 1A
 Store R2, 20
 Load R3, R1
 Load R4, R2
-Div R3, 0.0
+Add R3, 1
+Move R5, 1
+Move R6, 1
+CmpN R5, R6
 Output R3
 Halt
