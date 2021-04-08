@@ -28,3 +28,11 @@ R6: 0           BOOL
 //Load R1, R1      // dong nay luu gia tri cua vi tri so 0, vao R1, nghia la luu 10 vao R1 va R1 co type la INT
 //Output R1        // xuat ra R1
 //Halt
+
+Move 0A, 0A
+Store R1, R1
+Load R1, R1
+Output R1
+Halt
+ket qua--
+Invalid operand at address: 0A

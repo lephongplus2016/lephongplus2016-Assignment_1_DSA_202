@@ -8,10 +8,6 @@ ID: 1813518
 bool checkIsFloat( string src)
 {
     string src2 = src;
-    if(src2[src2.length()-1] == '\r' )
-    {
-        src2.erase(src2.length()-1);
-    }
     regex e ("[-+]?[0-9]*\\.[0-9]+");     // nho co \ nen regex moi nhan ra .
     bool correct = regex_match(src2, e);
     return correct;
@@ -20,10 +16,6 @@ bool checkIsFloat( string src)
 bool checkIsInt( string src)
 {
     string src2 = src;
-    if(src2[src2.length()-1] == '\r' )
-    {
-        src2.erase(src2.length()-1);
-    }
     regex e ("[-+]?[0-9]+");     // nho co \ nen regex moi nhan ra .
     bool correct = regex_match(src2, e);
     return correct;
@@ -37,7 +29,7 @@ bool checkType(string src)
         return true;
     else if(src == "true" || src == "false") 
         return true;
-    else if(src[src.length()] == 'A' )
+    else if(src[src.length()-1] == 'A' )
     {
         src = src.erase(src.length()-1);
         if (checkIsInt(src))
@@ -47,6 +39,30 @@ bool checkType(string src)
     }
     else 
         return false;
+}
+
+bool checkIsReg(string dest)
+{
+    if(dest[0] == 'R')
+    {
+        string temp = dest.substr(1);
+        if( !checkIsInt(temp))
+        {
+            return false;
+        }
+        int a = stoi(dest.substr(1))-1;
+        if(a>-1 && a<15)
+        {
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+    else {
+        return false;
+    }
+
 }
 
 void checkDivideByZero(int number, int ip)
@@ -137,6 +153,10 @@ GReg::~GReg(){}
 //---------------------------------------------------------------------------
 void VM::move(string dest, string src) {
 
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
     int destID= stoi(dest.substr(1))-1;
     if(src[0] == 'R')
     {
@@ -234,8 +254,11 @@ void VM::output(string dest) {
     }
 
 void VM::input(string dest){
-      if(dest[0] == 'R')
-      {
+      
+            if(!checkIsReg(dest)) 
+            {
+                throw InvalidOperand(ip);
+            }
           int destID = stoi(dest.substr(1)) -1;
           string temp;
           cin >> temp;
@@ -269,20 +292,20 @@ void VM::input(string dest){
                 }
             }
             else { //case address or else 
-                throw InvalidOperand(ip);
+                throw InvalidInput(ip);
                 
             }
 
-      }
-      else {
-          throw InvalidOperand(ip);
-      }
       ip++;
 }
 
 // lay gia tri cua src gan cho dest; src van la address nhung dest thi khong.
 void VM::load(string dest, string src)
 {
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
     int destID= stoi(dest.substr(1))-1;
     int srcID= stoi(src.substr(1))-1;
     int indexStatic = registerVM[srcID].data_address;
@@ -307,6 +330,10 @@ void VM::load(string dest, string src)
 
 void VM::store(string dest, string src)  //xac dinh dest da la address variable , src la ko the la dia chi
 {
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
     int destID= stoi(dest.substr(1))-1;
     int indexStatic = registerVM[destID].data_address;          // luu vao bo nho tinh
     if(src[0] == 'R')
@@ -368,7 +395,15 @@ void VM::store(string dest, string src)  //xac dinh dest da la address variable 
 // nhom lenh so hoc -----------------------------------------------------------
 //-----------------------------------------------------------------------------
 void VM::add(string dest, string src){
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
     int destID= stoi(dest.substr(1))-1;
+    if( registerVM[destID].type != INT && registerVM[destID].type != FLOAT)
+    {
+        throw TypeMismatch(ip);
+    }
         if(src[0] == 'R')
     {
         int srcID = stoi(src.substr(1))-1;
@@ -420,7 +455,15 @@ void VM::add(string dest, string src){
 }
 
 void VM::minus(string dest, string src){
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
 int destID= stoi(dest.substr(1))-1;
+if( registerVM[destID].type != INT && registerVM[destID].type != FLOAT)
+    {
+        throw TypeMismatch(ip);
+    }
         if(src[0] == 'R')
     {
         int srcID = stoi(src.substr(1))-1;
@@ -465,24 +508,31 @@ int destID= stoi(dest.substr(1))-1;
                 registerVM[destID].data_float -= stof(src);
                 registerVM[destID].type = FLOAT;
             }
-            else if(src[src.length()-1] == 'A' ){ //case address
-
-                throw TypeMismatch(ip);
-                
-            }
-            else{
+            else if (checkIsInt(src)){
                 if(registerVM[destID].type == FLOAT )  // xet src la int
                 {
                     registerVM[destID].data_float -= stof(src);
                 }
                 registerVM[destID].data_int -= stoi(src);
             }
+            else
+            {
+                throw TypeMismatch(ip);
+            }
     }
     this->ip++;
 }
 
 void VM::mul(string dest, string src){
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
 int destID= stoi(dest.substr(1))-1;
+if( registerVM[destID].type != INT && registerVM[destID].type != FLOAT)
+    {
+        throw TypeMismatch(ip);
+    }
         if(src[0] == 'R')
     {
         int srcID = stoi(src.substr(1))-1;
@@ -527,17 +577,16 @@ int destID= stoi(dest.substr(1))-1;
                 registerVM[destID].data_float *= stof(src);
                 registerVM[destID].type = FLOAT;
             }
-            else if(src[src.length()-1] == 'A' ){ //case address
-
-                throw TypeMismatch(ip);
-                
-            }
-            else{
+            else if (checkIsInt(src)){
                 if(registerVM[destID].type == FLOAT )  // xet src la int
                 {
                     registerVM[destID].data_float *= stof(src);
                 }
                 registerVM[destID].data_int *= stoi(src);
+            }
+            else
+            {
+                throw TypeMismatch(ip);
             }
     }
     this->ip++;
@@ -545,7 +594,16 @@ int destID= stoi(dest.substr(1))-1;
 }
 
 void VM::div(string dest, string src){
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
 int destID= stoi(dest.substr(1))-1;
+    if( registerVM[destID].type != INT && registerVM[destID].type != FLOAT)
+    {
+        throw TypeMismatch(ip);
+    }
+
         if(src[0] == 'R')
     {
         int srcID = stoi(src.substr(1))-1;
@@ -594,18 +652,17 @@ int destID= stoi(dest.substr(1))-1;
                 registerVM[destID].data_float /= stof(src);
                 registerVM[destID].type = FLOAT;
             }
-            else if(src[src.length()-1] == 'A' ){ //case address
-
-                throw TypeMismatch(ip);
-                
-            }
-            else{
+            else if (checkIsInt(src)){
                 checkDivideByZero(stoi(src), ip);
                 if(registerVM[destID].type == FLOAT )  // xet src la int
                 {
                     registerVM[destID].data_float /= stof(src);
                 }
                 registerVM[destID].data_int /= stoi(src);
+            }
+            else
+            {
+                throw TypeMismatch(ip);
             }
     }
     this->ip++;
@@ -616,6 +673,10 @@ int destID= stoi(dest.substr(1))-1;
 // nhom lenh so sanh -----------------------------------------------------------
 // ==
 void VM::CmpEQ(string dest, string src){
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
 	int destID= stoi(dest.substr(1))-1;
         if(src[0] == 'R')
     {
@@ -764,6 +825,10 @@ void VM::CmpEQ(string dest, string src){
 
 // !=
 void VM::CmpNE(string dest, string src){
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
       int destID= stoi(dest.substr(1))-1;
         if(src[0] == 'R')
     {
@@ -910,6 +975,10 @@ void VM::CmpNE(string dest, string src){
 
 // <
 void VM::CmpLT(string dest, string src){
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
 int destID= stoi(dest.substr(1))-1;
         if(src[0] == 'R')
     {
@@ -1044,6 +1113,10 @@ int destID= stoi(dest.substr(1))-1;
 
 // >
 void VM::CmpGT(string dest, string src){
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
 int destID= stoi(dest.substr(1))-1;
         if(src[0] == 'R')
     {
@@ -1177,6 +1250,10 @@ int destID= stoi(dest.substr(1))-1;
 }
 // >=
   void VM::CmpGE(string dest, string src){
+      if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
 int destID= stoi(dest.substr(1))-1;
         if(src[0] == 'R')
     {
@@ -1310,6 +1387,10 @@ int destID= stoi(dest.substr(1))-1;
   }
 
   void VM::CmpLE(string dest, string src){
+      if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
 int destID= stoi(dest.substr(1))-1;
         if(src[0] == 'R')
     {
@@ -1487,6 +1568,10 @@ void VM::returnIp(){
 
 //nhom lenh logic
 void VM::notP(string dest){
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
     int destID= stoi(dest.substr(1)) -1;
     if(dest[0] == 'R'){
         if( registerVM[destID].type != BOOL )
@@ -1507,6 +1592,10 @@ void VM::notP(string dest){
     ip++;
 }
 void VM::andP(string dest, string src){
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
     bool check= false;
     if (src[0]  == 'R')
     {
@@ -1554,6 +1643,10 @@ void VM::andP(string dest, string src){
     ip++;
 }
 void VM::orP(string dest, string src){
+    if(!checkIsReg(dest)) 
+    {
+        throw InvalidOperand(ip);
+    }
     bool check= false;
     if (src[0]  == 'R')
     {
@@ -1603,9 +1696,14 @@ void VM::orP(string dest, string src){
 
 void VM::loadToMemory(string instruction)
 {
+    if(instruction[instruction.length()-1] == '\r' )
+    {
+        instruction.erase(instruction.length()-1);
+    }
+
     if(instruction[0] == ' ' || instruction[instruction.length()-1]==' ')
     {
-         throw ("Invalid Instruction");
+         throw InvalidInstruction(codeLoadedIndex);
     }
 
     char* cstr = new char[instruction.length() + 1];
@@ -1620,18 +1718,28 @@ void VM::loadToMemory(string instruction)
         tok = strtok(NULL, " ,");
         if(i==0 && tok !=NULL){
             ins.op1 = string(tok);
+            if( (checkIsReg(ins.op1) ==false) && (checkType(ins.op1) == false))
+            {
+                throw InvalidOperand(codeLoadedIndex);
+            }
+
         }
         else if(i == 1 && tok!=NULL)
         {
             ins.op2= string(tok);
+            if( (checkIsReg(ins.op2) ==false) && (checkType(ins.op2) == false))
+            {
+                throw InvalidOperand(codeLoadedIndex);
+            }
         }
         else if(tok!=NULL){
-            throw InvalidInstruction(ip);
+            throw InvalidInstruction(codeLoadedIndex);
         }
         i++;
     }
-    this->codeMe[codeLoadedIndex]=ins;
-    codeLoadedIndex++;
+        this->codeMe[codeLoadedIndex]=ins;
+        codeLoadedIndex++; 
+    
 }
 
 void VM::run(string filename)
@@ -1758,7 +1866,6 @@ void VM::run(string filename)
                         throw InvalidInstruction(ip);
                     }
 
-            
         }
         else if( codeMe[i].code == "Call" )
         {

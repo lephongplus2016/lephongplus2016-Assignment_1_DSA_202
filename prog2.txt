@@ -1,4 +1,4 @@
-Move R1, 0A
+Move 0A, 0A
 Store R1, R1
 Load R1, R1
 Output R1
