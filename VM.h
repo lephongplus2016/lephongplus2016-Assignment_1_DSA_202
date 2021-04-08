@@ -20,19 +20,9 @@ int top;
 };
 //--------------------------------------------------
 
-// union GregData{
-//  	int data_int=0;
-//     float data_float;
-//     bool data_bool;
-//     string data_address;
-// };
 
 enum DataType { NONE, INT ,FLOAT,BOOL, ADDRESS};
 
-// struct address_type {
-// 	string address;
-// 	DataType add_type ;
-// };
 
 struct GReg {
    int data_int;
@@ -60,7 +50,7 @@ public:
 	Instruction codeMe[1000];
 	Stack *stack;
 	GReg registerVM[15];
-  GReg StaticReg[1000];
+  GReg StaticReg[65535];
 
   // thanh ghi
   int ip; // thanh ghi chay lan luot cac opcode
@@ -70,6 +60,7 @@ public:
   ~VM();
   void move(string dest , string src);
   void output(string dest);
+  void input(string dest);
   void loadToMemory(string instruction);
   bool readfile(string filename);
   void dump();
@@ -87,14 +78,16 @@ public:
   void CmpGT(string dest, string src);
   void CmpGE(string dest, string src);
   void CmpLE(string dest, string src);
-  
+  //nhom lenh dieu khien
+  void call(string src);
+  void returnIp();
+  //nhom lenh logic
+  void notP(string dest);
+  void andP(string dest, string src);
+  void orP(string dest, string src);
+
   void run(string filename);
 };
 #endif
 
 
-//Move R1, 0A      // dong nay luu dia chi bo nho tinh la 0A vao R1 , R1 co type la address , va gia tri la 0A
-//Store R1, 10     // dong nay luu gia tri 10 vao vi tri 0 tren bo nho tinh, ko lien quan den R1
-//Load R1, R1      // dong nay luu gia tri cua vi tri so 0, vao R1, nghia la luu 10 vao R1 va R1 co type la INT
-//Output R1        // xuat ra R1
-//Halt

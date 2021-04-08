@@ -1,3 +1,4 @@
-Move R1, 10.2
+Input R1
+Add R1, 1.0
 Output R1
 Halt

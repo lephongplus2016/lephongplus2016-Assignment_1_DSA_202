@@ -1,5 +1,10 @@
 #include "VM.h"
 
+/*
+**
+Name: Le Hong Phong
+ID: 1813518
+*/
 bool checkIsFloat( string src)
 {
     string src2 = src;
@@ -10,6 +15,38 @@ bool checkIsFloat( string src)
     regex e ("[-+]?[0-9]*\\.[0-9]+");     // nho co \ nen regex moi nhan ra .
     bool correct = regex_match(src2, e);
     return correct;
+}
+
+bool checkIsInt( string src)
+{
+    string src2 = src;
+    if(src2[src2.length()-1] == '\r' )
+    {
+        src2.erase(src2.length()-1);
+    }
+    regex e ("[-+]?[0-9]+");     // nho co \ nen regex moi nhan ra .
+    bool correct = regex_match(src2, e);
+    return correct;
+}
+
+bool checkType(string src)
+{
+    if( checkIsInt(src))
+        return true;
+    else if(checkIsFloat(src))
+        return true;
+    else if(src == "true" || src == "false") 
+        return true;
+    else if(src[src.length()] == 'A' )
+    {
+        src = src.erase(src.length()-1);
+        if (checkIsInt(src))
+            return true;
+        else 
+            return false;
+    }
+    else 
+        return false;
 }
 
 void checkDivideByZero(int number, int ip)
@@ -26,13 +63,13 @@ void checkDivideByZero(float number, int ip)
     }
 }
 
+
 bool VM::readfile(string filename)
 {
     fstream f;
     f.open(filename, ios::in);
     string data;
     string line;
-    int *codetemp = new int[500];
     while(!f.eof())
     {
         getline(f,line);
@@ -49,12 +86,10 @@ Stack::Stack() { top = -1; }
 bool Stack::push(int x)
 {
     if (top >= (MAX - 1)) {
-        cout << "Stack Overflow";
         return false;
     }
     else {
         s[++top] = x;
-        cout << x << " pushed into stack\n";
         return true;
     }
 }
@@ -62,7 +97,6 @@ bool Stack::push(int x)
 int Stack::pop()
 {
     if (top < 0) {
-        cout << "Stack Underflow";
         return 0;
     }
     else {
@@ -73,7 +107,6 @@ int Stack::pop()
 int Stack::peek()
 {
     if (top < 0) {
-        cout << "Stack is Empty";
         return 0;
     }
     else {
@@ -93,6 +126,7 @@ GReg::~GReg(){}
 
  VM::VM()
 {
+      stack = new Stack();
       this->ip = 0;
       for (int i = 0; i < 15; i++) {
             registerVM[i].type = NONE;
@@ -121,10 +155,13 @@ void VM::move(string dest, string src) {
         {
             registerVM[destID].data_bool = registerVM[srcID].data_bool;
         }
-        else { // case address
+        else if(registerVM[srcID].type == ADDRESS ){ // case address
             registerVM[destID].data_address = registerVM[srcID].data_address;
             
         }
+        else {
+                throw InvalidInstruction(ip);
+            }
 
     }
     else {
@@ -146,37 +183,102 @@ void VM::move(string dest, string src) {
             else if(src[src.length()-1] == 'A' ){ //case address
 
                 string temp = src.erase(src.length()-1);
+                if( checkIsInt(temp))
+                {
                 registerVM[destID].type = ADDRESS;  
                 registerVM[destID].data_address = stoi(temp);
+                }
+                else {
+                    throw InvalidOperand(ip);
+                }
                 
             }
-            else{
+            else if( checkIsInt(src)) {
                 registerVM[destID].data_int = stoi(src);
                 registerVM[destID].type = INT;
+            }
+            else {
+                throw InvalidInstruction(ip);
             }
     }
     this->ip++;
 }
     
 void VM::output(string dest) {
-    int index = stoi(dest.substr(1)) - 1;
-        if(registerVM[index].type == INT )
-        {
-            cout<<registerVM[index].data_int ;
+    if(dest[0] == 'R')
+    {    int index = stoi(dest.substr(1)) - 1;
+            if(registerVM[index].type == INT )
+            {
+                cout<<registerVM[index].data_int ;
+            }
+            else if(registerVM[index].type == FLOAT )
+            {
+                cout<<registerVM[index].data_float ;
+            }
+            else if(registerVM[index].type == BOOL )
+            {
+                cout<<registerVM[index].data_bool ;
+            }
+            else if(registerVM[index].type == ADDRESS ){
+                cout<<registerVM[index].data_address;  //address case
+            }
+    }
+    else {
+        if(!checkType(dest)){
+            throw InvalidOperand(ip);
         }
-        else if(registerVM[index].type == FLOAT )
-        {
-            cout<<registerVM[index].data_float ;
-        }
-        else if(registerVM[index].type == BOOL )
-        {
-            cout<<registerVM[index].data_bool ;
-        }
-        else if(registerVM[index].type == ADDRESS ){
-            cout<<registerVM[index].data_address;  //address case
-        }
+        cout << dest;
+    }
+
     ip++;
     }
+
+void VM::input(string dest){
+      if(dest[0] == 'R')
+      {
+          int destID = stoi(dest.substr(1)) -1;
+          string temp;
+          cin >> temp;
+            if(temp== "true")
+            {
+                if( registerVM[destID].type == NONE || registerVM[destID].type == BOOL )
+                {registerVM[destID].data_bool = true;
+                registerVM[destID].type = BOOL;
+                }
+            }
+            else if(temp== "false")
+            {
+                if( registerVM[destID].type == NONE || registerVM[destID].type == BOOL )
+                {registerVM[destID].data_bool = false;
+                registerVM[destID].type = BOOL;
+                }
+            }
+            else if( checkIsFloat(temp) )
+            {
+                if( registerVM[destID].type == NONE || registerVM[destID].type == FLOAT )
+               {registerVM[destID].data_float = stof(temp);
+                registerVM[destID].type = FLOAT;
+               }
+            }
+            
+            else if( checkIsInt(temp)){
+                if( registerVM[destID].type == NONE || registerVM[destID].type == INT )
+                {
+                registerVM[destID].data_int = stoi(temp);
+                registerVM[destID].type = INT;
+                }
+            }
+            else { //case address or else 
+                throw InvalidOperand(ip);
+                
+            }
+
+      }
+      else {
+          throw InvalidOperand(ip);
+      }
+      ip++;
+}
 
 // lay gia tri cua src gan cho dest; src van la address nhung dest thi khong.
 void VM::load(string dest, string src)
@@ -226,6 +328,9 @@ void VM::store(string dest, string src)  //xac dinh dest da la address variable 
         {
             StaticReg[indexStatic].data_bool = registerVM[srcID].data_bool;
         }
+        else{
+            throw TypeMismatch(ip);
+        }
 
     }
     else {
@@ -247,10 +352,13 @@ void VM::store(string dest, string src)  //xac dinh dest da la address variable 
                 StaticReg[indexStatic].type = FLOAT;
 
             }
-            else{
+            else if(checkIsInt(src)) {
                 StaticReg[indexStatic].data_int = stoi(src);
                 StaticReg[indexStatic].type = INT;
   
+            }
+            else {
+                throw TypeMismatch(ip);
             }
     }
     this->ip++;
@@ -287,16 +395,7 @@ void VM::add(string dest, string src){
         
     }
     else {
-
-            if(src== "true")
-            {
-                throw TypeMismatch(ip);
-            }
-            else if(src== "false")
-            {
-                throw TypeMismatch(ip);
-            }
-            else if(checkIsFloat(src))
+            if(checkIsFloat(src))
             {
                 if(registerVM[destID].type == INT ) //xet src la float
                 {
@@ -305,17 +404,16 @@ void VM::add(string dest, string src){
                 registerVM[destID].data_float += stof(src);
                 registerVM[destID].type = FLOAT;
             }
-            else if(src[src.length()-1] == 'A' ){ //case address
-
-                throw TypeMismatch(ip);
-                
-            }
-            else{
+            else if (checkIsInt(src)){
                 if(registerVM[destID].type == FLOAT )  // xet src la int
                 {
                     registerVM[destID].data_float += stof(src);
                 }
                 registerVM[destID].data_int += stoi(src);
+            }
+            else
+            {
+                throw TypeMismatch(ip);
             }
     }
     this->ip++;
@@ -636,7 +734,20 @@ void VM::CmpEQ(string dest, string src){
                 
             }
             else{
-                if(registerVM[destID].data_float == stoi(src))
+                if( registerVM[destID].type == FLOAT)
+                {
+                    if(registerVM[destID].data_float == stoi(src))
+                        {
+                            registerVM[destID].type = BOOL;
+                            registerVM[destID].data_bool = true;
+                        }
+                        else{
+                            registerVM[destID].type = BOOL;
+                            registerVM[destID].data_bool = false;
+                        }
+                }
+                else{
+                    if(registerVM[destID].data_int == stoi(src))
                     {
                         registerVM[destID].type = BOOL;
                         registerVM[destID].data_bool = true;
@@ -645,8 +756,8 @@ void VM::CmpEQ(string dest, string src){
                         registerVM[destID].type = BOOL;
                         registerVM[destID].data_bool = false;
                     }
+                }
             }
-            
     }
     this->ip++;
 }
@@ -768,7 +879,20 @@ void VM::CmpNE(string dest, string src){
                 
             }
             else{
-                if(registerVM[destID].data_float != stoi(src))
+                if( registerVM[destID].type == FLOAT)
+                {
+                    if(registerVM[destID].data_float != stoi(src))
+                        {
+                            registerVM[destID].type = BOOL;
+                            registerVM[destID].data_bool = true;
+                        }
+                        else{
+                            registerVM[destID].type = BOOL;
+                            registerVM[destID].data_bool = false;
+                        }
+                }
+                else{
+                    if(registerVM[destID].data_int != stoi(src))
                     {
                         registerVM[destID].type = BOOL;
                         registerVM[destID].data_bool = true;
@@ -777,6 +901,7 @@ void VM::CmpNE(string dest, string src){
                         registerVM[destID].type = BOOL;
                         registerVM[destID].data_bool = false;
                     }
+                }
             }
             
     }
@@ -888,7 +1013,20 @@ int destID= stoi(dest.substr(1))-1;
                 
             }
             else{
-                if(registerVM[destID].data_float < stoi(src))
+                if( registerVM[destID].type == FLOAT)
+                {
+                    if(registerVM[destID].data_float < stoi(src))
+                        {
+                            registerVM[destID].type = BOOL;
+                            registerVM[destID].data_bool = true;
+                        }
+                        else{
+                            registerVM[destID].type = BOOL;
+                            registerVM[destID].data_bool = false;
+                        }
+                }
+                else{
+                    if(registerVM[destID].data_int < stoi(src))
                     {
                         registerVM[destID].type = BOOL;
                         registerVM[destID].data_bool = true;
@@ -897,6 +1035,7 @@ int destID= stoi(dest.substr(1))-1;
                         registerVM[destID].type = BOOL;
                         registerVM[destID].data_bool = false;
                     }
+                }
             }
             
     }
@@ -1008,7 +1147,20 @@ int destID= stoi(dest.substr(1))-1;
                 
             }
             else{
-                if(registerVM[destID].data_float > stoi(src))
+                if( registerVM[destID].type > FLOAT)
+                {
+                    if(registerVM[destID].data_float == stoi(src))
+                        {
+                            registerVM[destID].type = BOOL;
+                            registerVM[destID].data_bool = true;
+                        }
+                        else{
+                            registerVM[destID].type = BOOL;
+                            registerVM[destID].data_bool = false;
+                        }
+                }
+                else{
+                    if(registerVM[destID].data_int > stoi(src))
                     {
                         registerVM[destID].type = BOOL;
                         registerVM[destID].data_bool = true;
@@ -1017,6 +1169,7 @@ int destID= stoi(dest.substr(1))-1;
                         registerVM[destID].type = BOOL;
                         registerVM[destID].data_bool = false;
                     }
+                }
             }
             
     }
@@ -1127,7 +1280,20 @@ int destID= stoi(dest.substr(1))-1;
                 
             }
             else{
-                if(registerVM[destID].data_float >= stoi(src))
+                if( registerVM[destID].type == FLOAT)
+                {
+                    if(registerVM[destID].data_float >= stoi(src))
+                        {
+                            registerVM[destID].type = BOOL;
+                            registerVM[destID].data_bool = true;
+                        }
+                        else{
+                            registerVM[destID].type = BOOL;
+                            registerVM[destID].data_bool = false;
+                        }
+                }
+                else{
+                    if(registerVM[destID].data_int >= stoi(src))
                     {
                         registerVM[destID].type = BOOL;
                         registerVM[destID].data_bool = true;
@@ -1136,6 +1302,7 @@ int destID= stoi(dest.substr(1))-1;
                         registerVM[destID].type = BOOL;
                         registerVM[destID].data_bool = false;
                     }
+                }
             }
             
     }
@@ -1246,7 +1413,20 @@ int destID= stoi(dest.substr(1))-1;
                 
             }
             else{
-                if(registerVM[destID].data_float <= stoi(src))
+                if( registerVM[destID].type == FLOAT)
+                {
+                    if(registerVM[destID].data_float <= stoi(src))
+                        {
+                            registerVM[destID].type = BOOL;
+                            registerVM[destID].data_bool = true;
+                        }
+                        else{
+                            registerVM[destID].type = BOOL;
+                            registerVM[destID].data_bool = false;
+                        }
+                }
+                else{
+                    if(registerVM[destID].data_int <= stoi(src))
                     {
                         registerVM[destID].type = BOOL;
                         registerVM[destID].data_bool = true;
@@ -1255,11 +1435,170 @@ int destID= stoi(dest.substr(1))-1;
                         registerVM[destID].type = BOOL;
                         registerVM[destID].data_bool = false;
                     }
+                }
             }
             
     }
     this->ip++;
   }
+
+//nhom lenh dieu khien
+void VM::call(string src){
+    
+    if(src[0] == 'R')
+    {
+        int srcID= stoi(src.substr(1))-1;
+        if( registerVM[srcID].type != BOOL )
+        {
+            throw TypeMismatch(ip);
+        }
+        else {
+            bool check= this->stack->push(ip);
+            if(check ==false)
+            {
+                throw StackFull(ip);
+            }
+            this->ip = registerVM[srcID].data_address -1;
+        }
+    }
+    else {
+        if (src[src.length()-1] == 'A'  )
+        {
+            bool check=this->stack->push(ip);
+            if(check ==false)
+            {
+                throw StackFull(ip);
+            }
+            string temp = src.erase(src.length()-1);
+            this->ip = stoi(temp) -1;
+        }
+        else{
+            throw TypeMismatch(ip);
+        }
+    }
+
+}
+void VM::returnIp(){
+    if(!stack->isEmpty()){
+        ip = stack->pop();
+       
+    }
+}
+
+//nhom lenh logic
+void VM::notP(string dest){
+    int destID= stoi(dest.substr(1)) -1;
+    if(dest[0] == 'R'){
+        if( registerVM[destID].type != BOOL )
+        {
+            throw TypeMismatch(ip);
+        }
+        if(registerVM[destID].data_bool == true)
+        {
+            registerVM[destID].data_bool = false;
+        } 
+        else{
+            registerVM[destID].data_bool = true;
+        }
+    }
+    else {
+        throw TypeMismatch(ip);
+    }
+    ip++;
+}
+void VM::andP(string dest, string src){
+    bool check= false;
+    if (src[0]  == 'R')
+    {
+        int srcID = stoi(src.substr(1))-1;
+        if( registerVM[srcID].type != BOOL)
+        {
+            throw TypeMismatch(ip);
+        }
+        if(registerVM[srcID].data_bool == true)
+        {
+            check = true;
+        } 
+    }
+    else{
+        if( src == "true")
+        {
+            check = true;
+        }
+        else{
+            throw TypeMismatch(ip);
+        }
+
+    }
+
+
+    int destID= stoi(dest.substr(1)) -1; //xet dest sau src
+    if(dest[0] == 'R'){
+        if( registerVM[destID].type != BOOL )
+        {
+            throw TypeMismatch(ip);
+        }
+        if(registerVM[destID].data_bool == true)
+        {
+            if(check == true)
+                return;
+        } 
+        else 
+        {
+            registerVM[destID].data_bool = false; //sai la false
+        }
+    }
+    else {
+        throw TypeMismatch(ip);
+    }
+    ip++;
+}
+void VM::orP(string dest, string src){
+    bool check= false;
+    if (src[0]  == 'R')
+    {
+        int srcID = stoi(src.substr(1))-1;
+        if( registerVM[srcID].type != BOOL)
+        {
+            throw TypeMismatch(ip);
+        }
+        if(registerVM[srcID].data_bool == true)
+        {
+            check = true;
+        } 
+    }
+    else{
+        if( src == "true")
+        {
+            check = true;
+        }
+        else{
+            throw TypeMismatch(ip);
+        }
+
+    }
+
+
+    int destID= stoi(dest.substr(1)) -1; //xet dest sau src
+    if(dest[0] == 'R'){
+        if( registerVM[destID].type != BOOL )
+        {
+            throw TypeMismatch(ip);
+        }
+        if(registerVM[destID].data_bool == true)
+        {
+            return;
+        } 
+        else if(registerVM[destID].data_bool == false && check ==true) 
+        {
+            registerVM[destID].data_bool = true;
+        }
+    }
+    else {
+        throw TypeMismatch(ip);
+    }
+    ip++;
+}
 
 
 void VM::loadToMemory(string instruction)
@@ -1287,7 +1626,7 @@ void VM::loadToMemory(string instruction)
             ins.op2= string(tok);
         }
         else if(tok!=NULL){
-            throw ("Invalid Instruction");
+            throw InvalidInstruction(ip);
         }
         i++;
     }
@@ -1308,6 +1647,10 @@ void VM::run(string filename)
         else if(codeMe[i].code == "Output")
         {
             output(codeMe[i].op1);
+        }
+        else if(codeMe[i].code == "Input")
+        {
+            input(codeMe[i].op1);
         }
         else if(codeMe[i].code == "Load")
         {
@@ -1356,6 +1699,92 @@ void VM::run(string filename)
         else if( codeMe[i].code == "CmpLE")
         {
             CmpLE(codeMe[i].op1, codeMe[i].op2);
+        }
+        else if( codeMe[i].code == "Jump")
+        {
+            string src = codeMe[i].op1;
+            
+            if(src[src.length()-1] == '\r' )
+            {
+                src.erase(src.length()-1);
+            }
+            if(src[src.length()-1] == 'A' )
+            {
+                string temp = src.erase(src.length()-1);
+                int step = stoi(temp);
+                if(step > codeLoadedIndex - 1 )
+                {
+                    throw InvalidDestination(this->ip);
+                }
+                i = step -1 ;
+                ip = step -1;
+            }
+            else {
+                throw InvalidInstruction(ip);
+            }
+
+        }
+        else if( codeMe[i].code == "JumpIf")
+        {
+            string dest = codeMe[i].op1;
+            int destID= stoi(dest.substr(1))-1; // check dest is true
+            if(registerVM[destID].type == BOOL)
+            {
+                if(registerVM[destID].data_bool == true)
+                {
+                    string src = codeMe[i].op2;
+                    
+                    if(src[src.length()-1] == '\r' )
+                    {
+                        src.erase(src.length()-1);
+                    }
+                    if(src[src.length()-1] == 'A' )
+                    {
+                        string temp = src.erase(src.length()-1);
+                        int step = stoi(temp);
+                        if(step > codeLoadedIndex - 1 )
+                        {
+                            throw InvalidDestination(this->ip+1);
+                        }
+                        i = step -1 ;
+                        ip = step -1;
+                    }
+                    else {
+                        throw InvalidInstruction(ip);
+                    }
+                }
+            }
+            else {                       //dest  ko phai bool
+                        throw InvalidInstruction(ip);
+                    }
+
+            
+        }
+        else if( codeMe[i].code == "Call" )
+        {
+            call( codeMe[i].op1);
+            i = ip;
+        }
+        else if( codeMe[i].code == "Return" )
+        {
+            returnIp();
+            i = ip;
+        }
+        else if( codeMe[i].code == "Not" )
+        {
+            notP(codeMe[i].op1);
+        }
+        else if( codeMe[i].code == "Or" )
+        {
+            orP(codeMe[i].op1, codeMe[i].op2);
+        }
+        else if( codeMe[i].code == "And" )
+        {
+            andP(codeMe[i].op1, codeMe[i].op2);
+        }
+        else if( codeMe[i].code == "Halt")
+        {
+            break;
         }
 
         else {

@@ -21,3 +21,10 @@ R3: 11           FLOAT
 R4: 20          INT
 R5: 0           BOOL
 R6: 0           BOOL
+
+
+//Move R1, 0A      // dong nay luu dia chi bo nho tinh la 0A vao R1 , R1 co type la address , va gia tri la 0A
+//Store R1, 10     // dong nay luu gia tri 10 vao vi tri 0 tren bo nho tinh, ko lien quan den R1
+//Load R1, R1      // dong nay luu gia tri cua vi tri so 0, vao R1, nghia la luu 10 vao R1 va R1 co type la INT
+//Output R1        // xuat ra R1
+//Halt
