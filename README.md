@@ -1,4 +1,5 @@
-# lephongplus2016-Assignment_1_DSA_202
+# lephongplus2016-Assignment_1_DSA_202 
+* This is assignment of course DSA - Fall 2020 in HCMUT
 ### Virtual machine is a software program that can run on a physical machine to
 ### function as a virtual computer system with its own set of instructions together
 ### with other components.
